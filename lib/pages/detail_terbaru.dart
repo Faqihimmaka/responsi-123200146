@@ -1,90 +1,82 @@
 import 'package:flutter/material.dart';
-import 'package:responsi_123200146/model/model_terbaru.dart';
+import 'package:responsi_123200146/model/model_data.dart';
 import 'package:responsi_123200146/service/base_network.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:responsi_123200146/pages/detail_data_all.dart';
 
-class Terbaru extends StatefulWidget {
-  String title;
-  Terbaru({Key? key, required this.title}) : super(key: key);
-
+class DetailTerbaru extends StatefulWidget {
   @override
-  State<Terbaru> createState() => _TerbaruPageState();
+  _TerbaruState createState() => _TerbaruState();
 }
 
-class _TerbaruPageState extends State<Terbaru> {
-  Future<void> _setLastOpen() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('last_open', widget.title);
-    prefs.setString('code', 'characters');
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _setLastOpen();
-  }
-
+class _TerbaruState extends State<DetailTerbaru> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.blue,
-        appBar: AppBar(
-          title: Text(
-              "Detail ${widget.title[0].toUpperCase()}${widget.title.substring(1).toLowerCase()}"),
-        ),
-        body: FutureBuilder(
+      appBar: AppBar(
+        title: Text('CNN TERBARU'),
+        centerTitle: true,
+      ),
+      body: Container(
+        child: FutureBuilder(
+          future: BaseNetwork.get('terbaru'),
           builder: (context, AsyncSnapshot snapshot) {
-            if (snapshot.data == null) {
-              return Container(
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            } else if (!snapshot.hasData) {
-              return Container(
-                child: Center(
-                  child: Text("Tidak ada data"),
-                ),
-              );
-            } else {
-              ListNewsModel karakter = snapshot.data;
-              return SingleChildScrollView(
-                child: Container(
-                  child: Column(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                            image: DecorationImage(
-                                image: NetworkImage(
-                                    'https://api-berita-indonesia.vercel.app/cnn/terbaru'),
-                                fit: BoxFit.cover)),
-                        width: MediaQuery.of(context).size.width,
-                        height: MediaQuery.of(context).size.height / 3,
-                      ),
-                      SizedBox(
-                        height: 5,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+            if (snapshot.hasData) {
+              ListNewsModel berita = ListNewsModel.fromJson(snapshot.data);
+              return ListView.builder(
+                itemCount: berita.data!.posts!.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetailBerita(
+                                title: berita.data!.posts![index].title!,
+                                pubDate: berita.data!.posts![index].pubDate!,
+                                thumbnail:
+                                    berita.data!.posts![index].thumbnail!,
+                                description:
+                                    berita.data!.posts![index].description!,
+                                link: berita.data!.posts![index].link!,
+                              ),
+                            ));
+                      },
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                  image: NetworkImage(
-                                      'hhttps://api-berita-indonesia.vercel.app/cnn'),
-                                  fit: BoxFit.cover),
-                            ),
-                            height: 50,
-                            width: 50,
+                          Image.network(
+                            '${berita.data!.posts![index].thumbnail!.toLowerCase()}',
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.error),
+                          ),
+                          Expanded(
+                            child: Container(
+                                padding:
+                                    EdgeInsets.only(left: 7, right: 7, top: 10),
+                                child: Text(
+                                  berita.data!.posts![index].title!,
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12),
+                                )),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               );
+            } else if (snapshot.hasError) {
+              return Container(
+                child: Center(),
+              );
+            } else {
+              return Center(child: CircularProgressIndicator());
             }
           },
-        ));
+        ),
+      ),
+    );
   }
 }
